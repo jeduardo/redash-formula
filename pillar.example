@@ -1,0 +1,10 @@
+redash:
+  datasources:
+    'Internal Redash PostgreSQL':
+      type: pg
+      options:
+        host: postgres
+        port: 5432
+        user: postgres
+        password: ''
+        database: postgres
