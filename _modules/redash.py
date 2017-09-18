@@ -72,14 +72,13 @@ def _post(path, params=None, data=None):
 def _delete(path, params=None):
     url = '%s/%s' % (_url(), path)
     res = requests.delete(url, headers=_headers(), params=params)
-    content = json.dumps('')
-    if res.headers['Content-Length'] > 0:
-        content = res.json()
-
+    log.debug('DELETE Status code: %s' % res.status_code)
+    log.debug('DELETE Content: %s' % res.content)
+    content = ''
     if res.status_code != 204:
+        content = res.json()
         raise CommandExecutionError('Server error when processing command: %s'
                                     % content['message'])
-
     return content
 
 
@@ -91,15 +90,46 @@ def list_users(id=None):
     return _get('users', id=id)
 
 
-def list_datasources(id=None):
+def _enhance_ds(ds):
+    full_ds = _get('data_sources', id=ds['id'])
+    ds_name = full_ds.pop('name')
+    return ds_name, full_ds
+
+
+def list_datasources(id=None, name=None):
     all_ds = {}
-    data_sources = _get('data_sources', id=id)
-    # Redash will send us a simplified list of each data source, but we want to
-    # output a more detailed list indexed by name.
-    for simple_ds in data_sources:
-        full_ds = _get('data_sources', id=simple_ds['id'])
-        ds_name = full_ds.pop('name')
-        all_ds[ds_name] = full_ds
+    if not name:
+        log.debug('Searching datasource by id: %s' % id)
+        data_sources = _get('data_sources', id=id)
+        log.debug('Found datasources: %s' % data_sources)
+        if type(data_sources) == list:
+            log.debug('Received list of datasources')
+            # Redash will send us a simplified list of each data source,
+            # but we want to output a more detailed list indexed by name.
+            for simple_ds in data_sources:
+                name, full_ds = _enhance_ds(simple_ds)
+                all_ds[name] = full_ds
+        else:
+            # Server couldn't find anything
+            if 'message' in data_sources.keys():
+                log.warning('Error message from server when searching'
+                            ' for datasource %s: %s' %
+                            (id, data_sources['message']))
+            else:
+                log.debug('Received single datasource')
+                # Redash has returned us one single result,
+                # let's enhance it anyway.
+                name, full_ds = _enhance_ds(data_sources)
+                all_ds[name] = full_ds
+    else:
+        log.debug('Searching datasource by name: %s' % name)
+        # get all datasources
+        data_sources = _get('data_sources')
+        for ds in data_sources:
+            if ds['name'] == name:
+                name, full_ds = _enhance_ds(ds)
+                all_ds[name] = full_ds
+                break
     return all_ds
 
 
@@ -121,8 +151,21 @@ def alter_datasource(id, name, type, options):
     return _post('data_sources/%d' % id, data=ds)
 
 
-def remove_datasource(id):
-    return _delete('data_sources/%d' % id)
+def remove_datasource(id=None, name=None):
+    ret = {
+        "removed": []
+    }
+    if not name:
+        res = list_datasources(id=id)
+    else:
+        res = list_datasources(name=name)
+    # Popping the result
+    for name, ds in res.items():
+        log.debug('Datasource details retrieved for %s: %s' % (name, ds))
+        if len(ds) > 0:
+            _delete('data_sources/%d' % ds['id'])
+            ret['removed'].append(ds)
+        return ret
 
 
 def list_dashboards(id=None):
