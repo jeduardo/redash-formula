@@ -75,15 +75,11 @@ def _delete(path, params=None):
     log.debug('DELETE Status code: %s' % res.status_code)
     log.debug('DELETE Content: %s' % res.content)
     content = ''
-    if res.status_code != 204:
+    if res.status_code not in [200, 204]:
         content = res.json()
         raise CommandExecutionError('Server error when processing command: %s'
                                     % content['message'])
     return content
-
-
-def list_queries(id=None):
-    return _get('queries', id=id)
 
 
 def list_users(id=None):
@@ -153,7 +149,7 @@ def alter_datasource(id, name, type, options):
 
 def remove_datasource(id=None, name=None):
     ret = {
-        "removed": []
+        'removed': []
     }
     if not name:
         res = list_datasources(id=id)
@@ -166,6 +162,94 @@ def remove_datasource(id=None, name=None):
             _delete('data_sources/%d' % ds['id'])
             ret['removed'].append(ds)
         return ret
+
+
+def list_queries(id=None, name=None):
+    all_queries = {}
+    if not name:
+        log.debug('Searching queries by id: %s' % id)
+        queries = _get('queries', id=id)
+        # Ordering queries by name in the returning hash
+        for query in queries:
+            name = query.pop('name')
+            all_queries[name] = query
+    else:
+        log.debug('Searching queries by name: %s' % name)
+        queries = _get('queries')
+        for query in queries:
+            if query['name'] == name:
+                name = query.pop('name')
+                all_queries[name] = query
+                break
+
+    return all_queries
+
+
+def add_query(name, datasource, description, query, options={},
+              schedule=None, publish=True):
+    queries = list_queries(name=name)
+    if name in queries.keys():
+        error = 'Query %s already exists' % name
+        log.error(error)
+        raise CommandExecutionError(error)
+
+    datasource = list_datasources(name=datasource)[datasource]
+    query = {
+        'name': name,
+        'data_source_id': datasource['id'],
+        'description': description,
+        'options': options,
+        'query': query,
+        'schedule': schedule
+    }
+    log.debug('Asking server to save query: %s' % query)
+    new_query = _post('queries', data=query)
+    if publish:
+        log.debug('Publishing the query')
+        data = {
+            "is_draft": False
+        }
+        _post('queries/%d' % new_query['id'], data=data)
+        new_query['is_draft'] = False
+        log.debug('Query published successfully')
+
+    return new_query
+
+
+def alter_query(name, datasource, description, query, options={},
+                schedule=None, publish=True):
+    queries = list_queries(name=name)
+    if name not in queries.keys():
+        error = 'Query %s does not exist' % name
+        log.error(error)
+        raise CommandExecutionError(error)
+
+    datasource = list_datasources(name=datasource)[datasource]
+    query = {
+        'name': name,
+        'data_source_id': datasource['id'],
+        'description': description,
+        'options': options,
+        'query': query,
+        'schedule': schedule,
+        'is_draft': not publish
+    }
+    log.debug('Asking server to save query: %s' % query)
+    new_query = _post('queries/%d' % queries[name]['id'], data=query)
+
+    return new_query
+
+
+def archive_query(name):
+    ret = {"archived": {}}
+    queries = list_queries(name=name)
+    if name not in queries.keys():
+        error = 'Query %s does not exist' % name
+        log.error(error)
+        raise CommandExecutionError(error)
+    _delete('queries/%d' % queries[name]['id'])
+    ret['archived'][name] = queries[name]
+    return ret
 
 
 def list_dashboards(id=None):

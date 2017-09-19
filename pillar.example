@@ -8,3 +8,5 @@ redash:
         user: postgres
         password: ''
         database: postgres
+  queries:
+    'Check Database version'
