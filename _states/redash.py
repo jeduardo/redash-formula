@@ -6,7 +6,6 @@ Interact with Redash.
 https://redash.io
 '''
 
-import collections
 import logging
 
 # Define the module's virtual name
@@ -57,7 +56,14 @@ def datasource_present(name, type, options, force=False):
                 options=options)
             ret['result'] = True
             ret['comment'] = 'Datasource was updated'
-            ret['changes'] = {name: {'old': existing_ds, 'new': updated_ds}}
+            ret['changes'] = {
+                'old': {
+                    name: existing_ds
+                },
+                'new': {
+                    name: updated_ds
+                }
+            }
         else:
             ret['result'] = True
             ret['comment'] = 'Datasource is present'
@@ -68,6 +74,80 @@ def datasource_present(name, type, options, force=False):
         if (new_ds):
             ret['result'] = True
             ret['comment'] = 'Datasource created'
-            ret['changes'] = {name: {'old': '', 'new': new_ds}}
+            ret['changes'] = {
+                'old': {
+                    name: 'Not present'
+                },
+                'new': {
+                    name: updated_ds
+                }
+            }
+
+    return ret
+
+
+def query_present(name, datasource, description, query, options={},
+                  schedule=None, publish=True):
+    ret = {'name': name,
+           'changes': {},
+           'result': False,
+           'comment': ''}
+
+    res = __salt__['redash.list_queries'](name=name)
+    # Check if query exists
+    if name in res.keys():
+        existing_query = res[name]
+        # Check whether the existing query is different
+        # than the defintion
+        log.debug('Query info for %s: %s' % (name, existing_query))
+        if existing_query['datasource'] != datasource \
+                or existing_query['description'] != description \
+                or existing_query['query'] != query \
+                or str(existing_query['schedule']) != str(schedule) \
+                or existing_query['is_draft'] != (not publish) \
+                or not _compare_hashes(existing_query['options'], options):
+            # Need to update the query
+
+            res = __salt__['redash.alter_query'](
+                name=name,
+                datasource=datasource,
+                description=description,
+                query=query,
+                options=options,
+                schedule=schedule,
+                publish=publish)
+            ret['result'] = True
+            ret['comment'] = 'Query was updated'
+            ret['changes'] = {
+                'old': {
+                    name: existing_query
+                },
+                'new': {
+                    name: res[name]
+                }
+            }
+        else:
+            ret['result'] = True
+            ret['comment'] = 'Query is present'
+    else:
+        # Create the query if not present
+        res = __salt__['redash.add_query'](
+            name=name,
+            datasource=datasource,
+            description=description,
+            query=query,
+            options=options,
+            schedule=schedule,
+            publish=publish)
+        ret['result'] = True
+        ret['comment'] = 'Datasource created'
+        ret['changes'] = {
+            'old': {
+                name: 'Not present'
+            },
+            'new': {
+                name: res[name]
+            }
+        }
 
     return ret

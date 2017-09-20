@@ -190,13 +190,14 @@ def list_queries(id=None, name=None):
         queries = _get('queries')
         for query in queries:
             if query['name'] == name:
-                details = _enhance_query(query)
+                name, details = _enhance_query(query)
                 all_queries[name] = details
     return all_queries
 
 
 def add_query(name, datasource, description, query, options={},
               schedule=None, publish=True):
+    ret = {}
     queries = list_queries(name=name)
     if name in queries.keys():
         error = 'Query %s already exists' % name
@@ -214,20 +215,28 @@ def add_query(name, datasource, description, query, options={},
     }
     log.debug('Asking server to save query: %s' % query)
     new_query = _post('queries', data=query)
-    if publish:
-        log.debug('Publishing the query')
-        data = {
-            "is_draft": False
-        }
-        _post('queries/%d' % new_query['id'], data=data)
-        new_query['is_draft'] = False
+    # The following operations require a live query
+    if publish or schedule:
+        id = new_query['id']
+        data = {}
+        if publish:
+            data['is_draft'] = False
+        if schedule:
+            data['schedule'] = schedule
+        log.debug('Updating the query %d with extra parameters: %s'
+                  % (id, data))
+        # Refreshing information
+        new_query = _post('queries/%d' % id, data=data)
         log.debug('Query published successfully')
 
-    return new_query
+    name, details = _enhance_query(new_query)
+    ret[name] = details
+    return ret
 
 
 def alter_query(name, datasource, description, query, options={},
                 schedule=None, publish=True):
+    ret = {}
     queries = list_queries(name=name)
     if name not in queries.keys():
         error = 'Query %s does not exist' % name
@@ -247,7 +256,9 @@ def alter_query(name, datasource, description, query, options={},
     log.debug('Asking server to save query: %s' % query)
     new_query = _post('queries/%d' % queries[name]['id'], data=query)
 
-    return new_query
+    name, details = _enhance_query(new_query)
+    ret[name] = details
+    return ret
 
 
 def archive_query(name):
