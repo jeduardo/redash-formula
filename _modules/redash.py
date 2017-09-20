@@ -51,6 +51,7 @@ def _get(path, id=None):
             page = page + 1
             result = _raw_get(path, params={'page': page})
         result = results
+    log.debug('Received from wire: %s' % result)
     return result
 
 
@@ -164,24 +165,33 @@ def remove_datasource(id=None, name=None):
         return ret
 
 
+def _enhance_query(query):
+    log.debug('Enhancing query: %s' % query)
+    dsrcs = list_datasources(id=query.pop('data_source_id'))
+    query['datasource'] = dsrcs.keys()[0]
+    name = query.pop('name')
+    return name, query
+
+
 def list_queries(id=None, name=None):
     all_queries = {}
     if not name:
         log.debug('Searching queries by id: %s' % id)
         queries = _get('queries', id=id)
+        # In case we go straight for an id we won't have a list.
+        if type(queries) is not list:
+            queries = [queries]
         # Ordering queries by name in the returning hash
         for query in queries:
-            name = query.pop('name')
-            all_queries[name] = query
+            name, details = _enhance_query(query)
+            all_queries[name] = details
     else:
         log.debug('Searching queries by name: %s' % name)
         queries = _get('queries')
         for query in queries:
             if query['name'] == name:
-                name = query.pop('name')
-                all_queries[name] = query
-                break
-
+                details = _enhance_query(query)
+                all_queries[name] = details
     return all_queries
 
 
