@@ -15,4 +15,5 @@ Available states
 ``manage``
 ------------
 
-Used to apply maangement configuration over a Redash deployment.
+Used to apply management configuration over a Redash deployment, creating
+datasources and queries as needed.

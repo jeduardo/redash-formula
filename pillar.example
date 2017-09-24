@@ -1,12 +1,92 @@
 redash:
   datasources:
-    'Internal Redash PostgreSQL':
+
+    Internal Redash PostgreSQL:
       type: pg
       options:
         host: postgres
         port: 5432
         user: postgres
-        password: ''
-        database: postgres
+        dbname: postgres
+
   queries:
-    'Check Database version'
+
+    Check database version:
+      namespaced: False
+      datasource: Internal Redash PostgreSQL
+      description: Query modified in Salt
+      query: | 
+        SELECT * FROM data_sources
+
+    Unpublished query:
+      namespaced: False
+      datasource: Internal Redash PostgreSQL
+      description: Query modified in Salt
+      query: |
+        select 'unpublished query' || now()
+      publish: False
+
+    Check database version scheduled every 1 minute:
+      namespaced: False
+      datasource: Internal Redash PostgreSQL
+      description: Query modified in Salt
+      query: |
+        select 'every 1 minute' || now()
+      schedule: {{ 1 * 60 }} # 1 minute
+
+    Check database version scheduled every 30 minutes:
+      namespaced: False
+      datasource: Internal Redash PostgreSQL
+      description: Query modified in Salt
+      query: |
+        select 'every 30 minutes' || now()
+      schedule: {{ 30 * 60 }} # 30 minutes
+
+    Check database version scheduled at 10:15 pm:
+      namespaced: False
+      datasource: Internal Redash PostgreSQL
+      description: Query modified in Salt
+      query: |
+        select 'run at 22:15' || now()
+      schedule: '22:15'
+
+    Check database version namespaced:
+      namespaced: True
+      datasource: Internal Redash PostgreSQL
+      description: Query modified in Salt
+      query: | 
+        SELECT * FROM data_sources
+
+    Unpublished query namespaced:
+      namespaced: True
+      datasource: Internal Redash PostgreSQL
+      description: Query modified in Salt
+      query: |
+        select 'unpublished query' || now()
+      publish: False
+
+    Check database version scheduled every 1 minute namespaced:
+      namespaced: True
+      datasource: Internal Redash PostgreSQL
+      description: Query modified in Salt
+      query: |
+        select 'every 1 minute' || now()
+      schedule: {{ 1 * 60 }} # 1 minute
+
+    Check database version scheduled every 30 minutes namespaced:
+      namespaced: True
+      datasource: Internal Redash PostgreSQL
+      description: Query modified in Salt
+      query: |
+        select 'every 30 minutes' || now()
+      schedule: {{ 30 * 60 }} # 30 minutes
+
+    Check database version scheduled at 10:15 pm namespaced:
+      namespaced: True
+      datasource: Internal Redash PostgreSQL
+      description: Query modified in Salt
+      query: |
+        select 'run at 22:15' || now()
+      schedule: '22:15'
+
+
