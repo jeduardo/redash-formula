@@ -83,8 +83,47 @@ def _delete(path, params=None):
     return content
 
 
-def list_users(id=None):
-    return _get('users', id=id)
+def _enhance_user(user):
+    groups = []
+    for group in user['groups']:
+        log.debug('Fetching more info for group %d' % group)
+        # Groups will always come as a hash with the group name as index
+        for group in list_groups(id=group):
+            groups.append(group)
+    log.debug('Collected groups: %s' % groups)
+    user['groups'] = groups
+    email = user.pop('email')
+    return email, user
+
+
+def list_users(id=None, email=None):
+    all_users = {}
+    result = _get('users')
+    if email:
+        for user in result:
+            if user['email'] == email:
+                name, info = _enhance_user(user)
+                all_users[name] = info
+                break
+        if not len(all_users.keys()):
+            msg = 'Could not find user %s' % email
+            log.error(msg)
+            raise CommandExecutionError(msg)
+    elif id:
+        for user in result:
+            if user['id'] == id:
+                name, info = _enhance_user(user)
+                all_users[name] = info
+                break
+        if not len(all_users.keys()):
+            msg = 'Could not find user with id %d' % id
+            log.error(msg)
+            raise CommandExecutionError(msg)
+    else:
+        for user in result:
+            name, info = _enhance_user(user)
+            all_users[name] = info
+    return all_users
 
 
 def _enhance_ds(ds):
@@ -271,6 +310,39 @@ def archive_query(name):
     _delete('queries/%d' % queries[name]['id'])
     ret['archived'][name] = queries[name]
     return ret
+
+
+def _enhance_group(group):
+    log.debug('Enhancing group: %s' % group)
+    # Retrieving members list
+    all_members = []
+    for member in _get('groups/%d/members' % group['id']):
+        all_members.append(member['email'])
+    group['members'] = all_members
+    name = group.pop('name')
+    return name, group
+
+
+def list_groups(name=None, id=None):
+    all_groups = {}
+    if not name:
+        log.debug('Searching groups by id: %s' % id)
+        groups = _get('groups', id=id)
+        # In case we go straight for an id we won't have a list.
+        if type(groups) is not list:
+            groups = [groups]
+        # Ordering queries by name in the returning hash
+        for group in groups:
+            name, details = _enhance_group(group)
+            all_groups[name] = details
+    else:
+        log.debug('Searching groups by name: %s' % name)
+        groups = _get('groups')
+        for group in groups:
+            if group['name'] == name:
+                name, details = _enhance_group(group)
+                all_groups[name] = details
+    return all_groups
 
 
 def list_dashboards(id=None):

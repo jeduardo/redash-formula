@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# Sample commands for running the test redash instance
+
+## Bring the entire system up
+docker-compose up
+
+## Access the embedded psql metadata database
+docker-compose exec postgres psql -U postgres
+
 # Sample commands for using the redash module
 
 ## Listing datasources
@@ -27,3 +35,6 @@ salt-call -l debug redash.alter_query name='Console Query 2' datasource='Interna
 
 ## Archiving a query
 salt-call -l debug redash.archive_query name='Console Query 2'
+
+## Adding a new group
+salt-call -l debug redash.add_group name='Test'
