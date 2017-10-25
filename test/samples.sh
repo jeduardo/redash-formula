@@ -37,4 +37,4 @@ salt-call -l debug redash.alter_query name='Console Query 2' datasource='Interna
 salt-call -l debug redash.archive_query name='Console Query 2'
 
 ## Adding a new group
-salt-call -l debug redash.add_group name='Test'
+salt-call -l debug redash.add_group name='Test Members' members="['j.eduardo@gmail.com', 'test@test.com']"

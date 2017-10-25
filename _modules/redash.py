@@ -330,7 +330,14 @@ def list_groups(name=None, id=None):
         groups = _get('groups', id=id)
         # In case we go straight for an id we won't have a list.
         if type(groups) is not list:
-            groups = [groups]
+            # We got a single result, let us verify that it isn't an error.
+            # We need to do this because redash keeps memberships lingering in
+            # the database after a group is removed.
+            if 'message' in groups:
+                log.info('No group found for id: %s' % groups)
+                groups = []
+            else:
+                groups = [groups]
         # Ordering queries by name in the returning hash
         for group in groups:
             name, details = _enhance_group(group)
@@ -343,6 +350,33 @@ def list_groups(name=None, id=None):
                 name, details = _enhance_group(group)
                 all_groups[name] = details
     return all_groups
+
+
+# The Redash API does not allow one to change permissions of a group at this
+# point in time.
+def add_group(name, members=None):
+    ret = {}
+    groups = list_groups(name=name)
+    if name in groups.keys():
+        error = 'Group %s already exists' % name
+        log.error(error)
+        raise CommandExecutionError(error)
+    group = {
+        'name': name,
+    }
+    # Create new group
+    new_group = _post('groups', data=group)
+    # Add members if members are specified
+    if members:
+        for member_email in members:
+            log.debug('Adding user %s to group' % member_email)
+            member = list_users(email=member_email)
+            log.debug('Found member info: %s' % member)
+            payload = {'user_id': member[member_email]['id']}
+            _post('groups/%d/members' % new_group['id'], data=payload)
+    name, details = _enhance_group(new_group)
+    ret[name] = details
+    return ret
 
 
 def list_dashboards(id=None):
