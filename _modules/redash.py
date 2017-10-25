@@ -423,6 +423,18 @@ def alter_group(name, members=None):
     return ret
 
 
+def delete_group(name):
+    ret = {'deleted':{}}
+    groups = list_groups(name=name)
+    if name not in groups.keys():
+        error = 'Group %s does not exist' % name
+        log.error(error)
+        raise CommandExecutionError(error)
+    _delete('groups/%d' % groups[name]['id'])
+    ret['deleted'][name] = groups[name]
+    return ret    
+
+
 def list_dashboards(id=None):
     return _get('dashboards', id=id)
 

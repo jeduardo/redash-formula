@@ -41,3 +41,6 @@ salt-call -l debug redash.add_group name='Test Members' members="['test@test.com
 
 ## Changing the members of a group
 salt-call -l debug redash.alter_group name='Test Members' members="['j.eduardo@gmail.com', 'test2@test2.com']"
+
+## Remove a group
+salt-call -l debug redash.delete_group name='Test Members'
