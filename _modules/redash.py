@@ -379,6 +379,50 @@ def add_group(name, members=None):
     return ret
 
 
+# The Redash API does not allow one to change permissions of a group at this
+# point in time.
+def alter_group(name, members=None):
+    ret = {}
+    groups = list_groups(name=name)
+    if name not in groups.keys():
+        error = 'Group %s does not exist' % name
+        log.error(error)
+        raise CommandExecutionError(error)
+    group = groups[name]
+    # Now we check which members we need to add and which members we need to
+    # remove from the group.
+    log.debug('Members: %s' % members)
+    log.debug('Members from group: %s' % group['members'])
+    members_to_add = []
+    members_to_remove = []
+    for member in members:
+        if member not in group['members']:
+            members_to_add.append(member)
+    for member in group['members']:
+        if member not in members:
+            members_to_remove.append(member)
+    log.debug('Members to add: %s' % members_to_add)
+    log.debug('Members to remove: %s' % members_to_remove)
+    # Now process these members
+    for member_email in members_to_remove:
+        log.debug('Removing user %s from group' % member_email)
+        member = list_users(email=member_email)
+        log.debug('Found member info: %s' % member)
+        user_id = member[member_email]['id']
+        _delete('groups/%d/members/%s' % (group['id'], user_id)) 
+    for member_email in members_to_add:
+        log.debug('Adding user %s to group' % member_email)
+        member = list_users(email=member_email)
+        log.debug('Found member info: %s' % member)
+        payload = {'user_id': member[member_email]['id']}
+        _post('groups/%d/members' % group['id'], data=payload)
+    # If there are no errors so far, this means that all members were processed
+    # successfully, so we just update the return view.
+    group['members'] = members
+    ret[name] = group
+    return ret
+
+
 def list_dashboards(id=None):
     return _get('dashboards', id=id)
 
