@@ -127,8 +127,16 @@ def list_users(id=None, email=None):
 
 
 def _enhance_ds(ds):
+    log.debug('Enhancing datasource: %s' % ds)
     full_ds = _get('data_sources', id=ds['id'])
     ds_name = full_ds.pop('name')
+    groups = []
+    for group_id in full_ds['groups']:
+        group = list_groups(id=group_id)
+        if len(group):
+            for group_name in group:
+                groups.append(group_name)
+    full_ds['groups'] = groups
     return ds_name, full_ds
 
 

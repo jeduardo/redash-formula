@@ -25,17 +25,17 @@ Implementation roadmap
 	- List users (DONE)
 	- Modify users
 	- Remove users
-- Group management (DONE)
+- Group management 
 	- List groups (DONE)
 	- Modify groups (DONE)
 		- Add/Remove users (DONE)
 		- Add/Remove permissions (NOT POSSIBLE)
 	- Remove groups (DONE)
+	- Add/Remove datasources 
 - Datasource management 
 	- List datasources (DONE)
 	- Add datasources (DONE)
 	- Remove datasources (DONE)
-	- Add to/remove from groups
 - Query management (DONE)
 	- Add queries (DONE)
 	- Modify queries (DONE)
