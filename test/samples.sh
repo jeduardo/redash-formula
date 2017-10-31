@@ -37,10 +37,19 @@ salt-call -l debug redash.alter_query name='Console Query 2' datasource='Interna
 salt-call -l debug redash.archive_query name='Console Query 2'
 
 ## Adding a new group
-salt-call -l debug redash.add_group name='Test Members' members="['test@test.com']"
+salt-call -l debug redash.add_group name='Test Group'
 
-## Changing the members of a group
-salt-call -l debug redash.alter_group name='Test Members' members="['j.eduardo@gmail.com', 'test2@test2.com']"
+## Adding a member to a new group
+salt-call -l debug redash.add_group_member name='Test Group' member='test@test.com'
 
-## Remove a group
-salt-call -l debug redash.delete_group name='Test Members'
+## Removing a member from an existing group
+salt-call -l debug redash.remove_group_member name='Test Group' member='test@test.com'
+
+## Adding a datasource to an existing group
+salt-call -l debug redash.add_group_datasource name='Test Group' datasource='Internal Redash PostgreSQL'
+
+## Modifying the properties of an existing datasource
+salt-call -l debug redash.alter_group_datasource name='Test Group' datasource='Internal Redash PostgreSQL' view_only=True
+
+## Removing a datasource from an existing group
+salt-call -l debug redash.remove_group_datasource datasource='Internal Redash PostgreSQL'

@@ -327,6 +327,13 @@ def _enhance_group(group):
     for member in _get('groups/%d/members' % group['id']):
         all_members.append(member['email'])
     group['members'] = all_members
+    # Retrieving datasources list
+    all_ds = {}
+    for ds in _get('groups/%d/data_sources' % group['id']):
+        all_ds[ds['name']] = {
+            'view_only': ds['view_only']
+        }
+    group['datasources'] = all_ds
     name = group.pop('name')
     return name, group
 
@@ -360,8 +367,6 @@ def list_groups(name=None, id=None):
     return all_groups
 
 
-# The Redash API does not allow one to change permissions of a group at this
-# point in time.
 def add_group(name, members=None):
     ret = {}
     groups = list_groups(name=name)
@@ -374,22 +379,12 @@ def add_group(name, members=None):
     }
     # Create new group
     new_group = _post('groups', data=group)
-    # Add members if members are specified
-    if members:
-        for member_email in members:
-            log.debug('Adding user %s to group' % member_email)
-            member = list_users(email=member_email)
-            log.debug('Found member info: %s' % member)
-            payload = {'user_id': member[member_email]['id']}
-            _post('groups/%d/members' % new_group['id'], data=payload)
     name, details = _enhance_group(new_group)
     ret[name] = details
     return ret
 
 
-# The Redash API does not allow one to change permissions of a group at this
-# point in time.
-def alter_group(name, members=None):
+def add_group_member(name, member):
     ret = {}
     groups = list_groups(name=name)
     if name not in groups.keys():
@@ -397,42 +392,112 @@ def alter_group(name, members=None):
         log.error(error)
         raise CommandExecutionError(error)
     group = groups[name]
-    # Now we check which members we need to add and which members we need to
-    # remove from the group.
-    log.debug('Members: %s' % members)
-    log.debug('Members from group: %s' % group['members'])
-    members_to_add = []
-    members_to_remove = []
-    for member in members:
-        if member not in group['members']:
-            members_to_add.append(member)
-    for member in group['members']:
-        if member not in members:
-            members_to_remove.append(member)
-    log.debug('Members to add: %s' % members_to_add)
-    log.debug('Members to remove: %s' % members_to_remove)
-    # Now process these members
-    for member_email in members_to_remove:
-        log.debug('Removing user %s from group' % member_email)
-        member = list_users(email=member_email)
-        log.debug('Found member info: %s' % member)
-        user_id = member[member_email]['id']
-        _delete('groups/%d/members/%s' % (group['id'], user_id)) 
-    for member_email in members_to_add:
-        log.debug('Adding user %s to group' % member_email)
-        member = list_users(email=member_email)
-        log.debug('Found member info: %s' % member)
-        payload = {'user_id': member[member_email]['id']}
+    # Need to re-add the name into the group info object
+    group['name'] = name
+    log.debug('Group info: %s' % group)
+    if member in group['members']:
+        log.warning('%s is already a member of group %s' % (member, name))
+    else:
+        log.debug('Adding user %s to group' % member)
+        member_info = list_users(email=member)[member]
+        log.debug('Found member info: %s' % member_info)
+        payload = {'user_id': member_info['id']}
         _post('groups/%d/members' % group['id'], data=payload)
-    # If there are no errors so far, this means that all members were processed
-    # successfully, so we just update the return view.
-    group['members'] = members
-    ret[name] = group
+    name, details = _enhance_group(group)
+    ret[name] = details
+    return ret
+
+
+def remove_group_member(name, member):
+    ret = {}
+    groups = list_groups(name=name)
+    if name not in groups.keys():
+        error = 'Group %s does not exist' % name
+        log.error(error)
+        raise CommandExecutionError(error)
+    group = groups[name]
+    # Need to re-add the name into the group info object
+    group['name'] = name
+    log.debug('Group info: %s' % group)
+    if member not in group['members']:
+        log.warning('%s is already not a member of group %s' %
+                    (member, name))
+    else:
+        member_info = list_users(email=member)[member]
+        log.debug('Found member info: %s' % member_info)
+        _delete('groups/%d/members/%d' % (group['id'], member_info['id']))
+    name, details = _enhance_group(group)
+    ret[name] = details
+    return ret
+
+
+def add_group_datasource(name, datasource):
+    ret = {}
+    groups = list_groups(name=name)
+    if name not in groups.keys():
+        error = 'Group %s does not exist' % name
+        log.error(error)
+        raise CommandExecutionError(error)
+    group = groups[name]
+    group['name'] = name
+    if datasource not in group['datasources'].keys():
+        ds = list_datasources(name=datasource)[datasource]
+        payload = {'data_source_id': ds['id']}
+        _post('groups/%d/data_sources' % group['id'], data=payload)
+    else:
+        log.warning('Datasource %s already accessible to group' % datasource)
+    name, details = _enhance_group(group)
+    ret[name] = details
+    return ret
+
+
+def remove_group_datasource(name, datasource):
+    ret = {}
+    groups = list_groups(name=name)
+    if name not in groups.keys():
+        error = 'Group %s does not exist' % name
+        log.error(error)
+        raise CommandExecutionError(error)
+    group = groups[name]
+    group['name'] = name
+    if datasource in group['datasources'].keys():
+        ds = list_datasources(name=datasource)[datasource]
+        _delete('groups/%d/data_sources/%d' % (group['id'], ds['id']))
+    else:
+        log.warning('Datasource %s already not accessible to group' %
+                    datasource)
+    name, details = _enhance_group(group)
+    ret[name] = details
+    return ret
+
+
+def alter_group_datasource(name, datasource, view_only=False):
+    ret = {}
+    groups = list_groups(name=name)
+    if name not in groups.keys():
+        error = 'Group %s does not exist' % name
+        log.error(error)
+        raise CommandExecutionError(error)
+    group = groups[name]
+    group['name'] = name
+    if datasource in group['datasources'].keys():
+        current_view = group['datasources'][datasource].get('view_only', False)
+        if current_view != view_only:
+            log.warning('Changing datasource visibility')
+            ds = list_datasources(name=datasource)[datasource]
+            payload = {'view_only': view_only}
+            _post('groups/%d/data_sources/%d' % (group['id'], ds['id']),
+                  data=payload)
+    else:
+        raise CommandExecutionError('Datasource %s not accessible to group' %
+                                    datasource)
+    name, details = _enhance_group(group)
+    ret[name] = details
     return ret
 
 
 def delete_group(name):
-    ret = {'deleted':{}}
+    ret = {'deleted': {}}
     groups = list_groups(name=name)
     if name not in groups.keys():
         error = 'Group %s does not exist' % name
@@ -440,7 +505,7 @@ def delete_group(name):
         raise CommandExecutionError(error)
     _delete('groups/%d' % groups[name]['id'])
     ret['deleted'][name] = groups[name]
-    return ret    
+    return ret
 
 
 def list_dashboards(id=None):
