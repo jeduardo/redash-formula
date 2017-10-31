@@ -87,6 +87,32 @@ def datasource_present(name, type, options, force=False):
     return ret
 
 
+def datasource_absent(name):
+    ret = {'name': name,
+       'changes': {},
+       'result': False,
+       'comment': ''}
+    # Check if datasource_absent is present
+    res = __salt__['redash.list_datasources'](name=name)
+    if name in res.keys():
+        old_datasource = res[name]
+        __salt__['redash.remove_datasource'](name=name)
+        ret['result'] = True
+        ret['comment'] = 'Datasource was removed'
+        ret['changes'] = {
+            'old': {
+                name: old_datasource
+            },
+            'new': {
+                name: None
+            }
+        }
+    else:
+        ret['result'] = True
+        ret['comment'] = 'Datasource is absent'
+    return ret
+
+
 def query_present(name, datasource, description, query, options={},
                   schedule=None, publish=True):
     ret = {'name': name,
@@ -198,4 +224,107 @@ def user_present(email, name):
                 }
             }
     # Return the result
+    return ret
+
+
+def group_present(name, members=[], datasources={}):
+    ret = {'name': name,
+       'changes': {},
+       'result': False,
+       'comment': ''}
+    changes = False
+    # Check if group is present. 
+    res = __salt__['redash.list_groups'](name=name)
+    if name in res.keys():
+        old_group = res[name]
+        cur_group = res[name]
+    else:
+        old_group = None
+        cur_group = None
+    # If not present, then create it.
+    if not cur_group:
+        res = __salt__['redash.add_group'](name=name)
+        cur_group = res[name]
+
+    # Now we have a group. Let's check if we need to change the members list.
+    members_add = []
+    members_remove = []
+    for member in members:
+        if member not in cur_group['members']:
+            members_add.append(member)
+    for member in cur_group['members']:
+        if member not in members:
+            members_remove.append(member)
+    log.debug('Members to add: %s' % members_add)
+    log.debug('Members to remove: %s' % members_remove)
+    for member in members_add:
+        __salt__['redash.add_group_member'](name=name, member=member)
+        changes = True
+    for member in members_remove:
+        __salt__['redash.remove_group_member'](name=name, member=member)
+        changes = True
+
+    # Similar procedure for the datasources.
+    ds_add = []
+    ds_remove = []
+    for ds in datasources:
+        if ds not in cur_group['datasources']:
+            ds_add.append(ds)
+    for ds in cur_group['datasources']:
+        if ds not in datasources:
+            ds_remove.append(member)
+    log.debug('Datasources to add: %s' % ds_add)
+    log.debug('Datasources to remove: %s' % ds_remove)
+    for ds in ds_add:
+        __salt__['redash.add_group_datasource'](name=name, datasource=ds)
+        changes = True
+    for ds in ds_remove:
+        __salt__['redash.remove_group_datasource'](name=name, datasource=ds)
+        changes = True
+
+    # Now we get the current view of the new group
+    cur_group = __salt__['redash.list_groups'](name=name)
+
+    # Fill in the old and new values and it should be all done.
+    if not old_group:
+        ret['comment'] = 'Group was created'
+    elif changes:
+        ret['comment'] = 'Group was updated'
+        ret['changes'] = {
+            'old': {
+                name: old_group
+            },
+            'new': {
+                name: cur_group
+            }
+        }
+    else:
+        ret['comment'] = 'Group is present and in the desired state'
+    ret['result'] = True
+    return ret
+
+
+def group_absent(name):
+    ret = {'name': name,
+       'changes': {},
+       'result': False,
+       'comment': ''}
+    # Check if group is present
+    res = __salt__['redash.list_groups'](name=name)
+    if name in res.keys():
+        old_group = res[name]
+        __salt__['redash.remove_group'](name=name)
+        ret['result'] = True
+        ret['comment'] = 'Group was removed'
+        ret['changes'] = {
+            'old': {
+                name: old_group
+            },
+            'new': {
+                name: None
+            }
+        }
+    else:
+        ret['result'] = True
+        ret['comment'] = 'Group is absent'
     return ret

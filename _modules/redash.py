@@ -399,7 +399,7 @@ def list_groups(name=None, id=None):
     return all_groups
 
 
-def add_group(name, members=None):
+def add_group(name):
     ret = {}
     groups = list_groups(name=name)
     if name in groups.keys():
@@ -528,15 +528,15 @@ def alter_group_datasource(name, datasource, view_only=False):
     return ret
 
 
-def delete_group(name):
-    ret = {'deleted': {}}
+def remove_group(name):
+    ret = {'removed': {}}
     groups = list_groups(name=name)
     if name not in groups.keys():
         error = 'Group %s does not exist' % name
         log.error(error)
         raise CommandExecutionError(error)
     _delete('groups/%d' % groups[name]['id'])
-    ret['deleted'][name] = groups[name]
+    ret['removed'][name] = groups[name]
     return ret
 
 

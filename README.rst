@@ -55,17 +55,17 @@ Implementation roadmap modules
 Implementation roadmap states
 =============================
 
-- User management
-	- List users 
-	- Modify users
+- User management (DONE)
+	- List users  (DONE)
+	- Modify users (DONE)
 	- Remove users (NOT POSSIBLE)
-- Group management
-	- List groups 
-	- Modify groups
-		- Add/Remove users
+- Group management (DONE)
+	- List groups (DONE)
+	- Modify groups (DONE)
+		- Add/Remove users (DONE)
 		- Add/Remove permissions (NOT POSSIBLE)
-	- Remove groups
-	- Add/Remove datasources
+	- Remove groups (DONE)
+	- Add/Remove datasources (DONE)
 - Datasource management (DONE)
 	- List datasources (DONE)
 	- Add datasources (DONE)

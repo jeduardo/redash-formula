@@ -1,4 +1,5 @@
 redash:
+  # Define all users for the instance
   users:
     j.eduardo@gmail.com:
       name: 'J. Eduardo'
@@ -15,6 +16,7 @@ redash:
     test3@test.com:
       name: 'Test User 3'
 
+  # Define all groups for the instance
   groups:
     test:
       members:
@@ -31,10 +33,15 @@ redash:
     test2:
       absent: True
 
-    'Test Group':
+    Test Group:
       members:
         - 'j.eduardo@gmail.com'
+      # For no datasources it is possible to just add an empty entry or omit
+      # it altogether. If the group had datasources before, an empty map will
+      # take care of removing all of them.
+      datasources: {}
 
+  # Define all datasources for the instance
   datasources:
     Internal Redash PostgreSQL:
       type: pg
@@ -52,6 +59,10 @@ redash:
         user: postgres
         dbname: postgres
 
+    Absent datasource:
+      absent: True
+
+  # Define all queries for the instance
   queries:
     Check database version:
       namespaced: False
