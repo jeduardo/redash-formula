@@ -105,10 +105,6 @@ def list_users(id=None, email=None):
                 name, info = _enhance_user(user)
                 all_users[name] = info
                 break
-        if not len(all_users.keys()):
-            msg = 'Could not find user %s' % email
-            log.error(msg)
-            raise CommandExecutionError(msg)
     elif id:
         for user in result:
             if user['id'] == id:
@@ -124,6 +120,42 @@ def list_users(id=None, email=None):
             name, info = _enhance_user(user)
             all_users[name] = info
     return all_users
+
+
+def add_user(email, name):
+    ret = {}
+    users = list_users(email=email)
+    if email in users.keys():
+        error = 'User %s already exists' % name
+        log.error(error)
+        raise CommandExecutionError(error)
+
+    user = {
+        'email': email,
+        'name': name
+    }
+    new_user = _post('users', data=user)
+    name, details = _enhance_user(new_user)
+    ret[name] = details
+    return ret
+
+
+def alter_user(email, name):
+    ret = {}
+    users = list_users(email=email)
+    if email not in users.keys():
+        error = 'User %s does not exist' % name
+        log.error(error)
+        raise CommandExecutionError(error)
+    user = users[email]
+    user['email'] = email
+    payload = {
+        'name': name
+    }
+    new_user = _post('users/%d' % user['id'], data=payload)
+    name, details = _enhance_user(new_user)
+    ret[name] = details
+    return ret
 
 
 def _enhance_ds(ds):

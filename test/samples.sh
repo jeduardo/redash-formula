@@ -53,3 +53,10 @@ salt-call -l debug redash.alter_group_datasource name='Test Group' datasource='I
 
 ## Removing a datasource from an existing group
 salt-call -l debug redash.remove_group_datasource datasource='Internal Redash PostgreSQL'
+
+## Adding a user
+salt-call -l debug redash.add_user email='test4@test.com' name='Test User 4'
+
+## Updating a user
+salt-call -l debug redash.alter_user email='test4@test.com' name='New Name 4'
+

@@ -18,13 +18,13 @@ Available states
 Used to apply management configuration over a Redash deployment, creating
 datasources and queries as needed.
 
-Implementation roadmap
-======================
+Implementation roadmap modules
+==============================
 
-- User management
+- User management (DONE)
 	- List users (DONE)
-	- Modify users
-	- Remove users
+	- Modify users (DONE)
+	- Remove users (NOT POSSIBLE)
 - Group management (DONE)
 	- List groups (DONE)
 	- Modify groups (DONE)
@@ -32,6 +32,40 @@ Implementation roadmap
 		- Add/Remove permissions (NOT POSSIBLE)
 	- Remove groups (DONE)
 	- Add/Remove datasources (DONE)
+- Datasource management (DONE)
+	- List datasources (DONE)
+	- Add datasources (DONE)
+	- Remove datasources (DONE)
+- Query management (DONE)
+	- Add queries (DONE)
+	- Modify queries (DONE)
+	- Archive (delete) queries (DONE)
+- Alert destination management
+	- Create alert destinations
+	- Remove alert destinations
+- Alert
+	- Create new alerts
+	- Modify alerts
+	- Remove alerts
+- Dashboard management
+	- Create dashboard
+	- Modify dashboard
+	- Remove dashboard
+
+Implementation roadmap states
+=============================
+
+- User management
+	- List users 
+	- Modify users
+	- Remove users (NOT POSSIBLE)
+- Group management
+	- List groups 
+	- Modify groups
+		- Add/Remove users
+		- Add/Remove permissions (NOT POSSIBLE)
+	- Remove groups
+	- Add/Remove datasources
 - Datasource management (DONE)
 	- List datasources (DONE)
 	- Add datasources (DONE)
