@@ -32,6 +32,7 @@ def _compare_hashes(hash1, hash2, filter=[]):
     log.debug('Hashes considered equal')
     return True
 
+
 def datasource_present(name, type, options, force=False):
     ret = {'name': name,
            'changes': {},
@@ -150,4 +151,51 @@ def query_present(name, datasource, description, query, options={},
             }
         }
 
+    return ret
+
+
+def user_present(email, name):
+    ret = {'name': email,
+           'changes': {},
+           'result': False,
+           'comment': ''}
+    res = __salt__['redash.list_users'](email=email)
+    log.debug('Result received from module: %s' % res)
+    # Check if the user is already there
+    if email in res.keys():
+        # Are the variable properties as they should be?
+        user = res[email]
+        log.debug('Current user properties: %s' % user)
+        if user['name'] == name:
+            ret['result'] = True
+            ret['comment'] = 'User is present'
+        else:
+            # If the user exists, then update the required attributes
+            res = __salt__['redash.alter_user'](email=email, name=name)
+            if res:
+                ret['result'] = True
+                ret['comment'] = 'User was updated'
+                ret['changes'] = {
+                    'old': {
+                        email: user
+                    },
+                    'new': {
+                        email: res[email]
+                    }
+                }
+    else:
+        # We have no user here, let's create it.
+        res = __salt__['redash.add_user'](email=email, name=name)
+        if res:
+            ret['result'] = True
+            ret['comment'] = 'User was created'
+            ret['changes'] = {
+                'old': {
+                    email: 'Not present'
+                },
+                'new': {
+                    email: res[email]
+                }
+            }
+    # Return the result
     return ret
