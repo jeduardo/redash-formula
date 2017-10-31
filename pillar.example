@@ -1,6 +1,41 @@
 redash:
-  datasources:
+  users:
+    j.eduardo@gmail.com:
+      name: 'J. Eduardo'
 
+    test2@test2.com:
+      name: 'Test User 2'
+
+    test@test.com:
+      name: 'Test User 1'
+
+    test4@test.com:
+      name: 'Test User 4'
+
+    test3@test.com:
+      name: 'Test User 3'
+
+  groups:
+    test:
+      members:
+        - 'j.eduardo@gmail.com'
+        - 'test@test.com'
+        - 'test2@test2.com'
+        - 'test3@test.com'
+        - 'test4@test.com'
+      datasources:
+        Internal Redash PostgreSQL:
+          view_only: True
+        Second test datasource:
+
+    test2:
+      absent: True
+
+    'Test Group':
+      members:
+        - 'j.eduardo@gmail.com'
+
+  datasources:
     Internal Redash PostgreSQL:
       type: pg
       options:
@@ -9,13 +44,20 @@ redash:
         user: postgres
         dbname: postgres
 
-  queries:
+    Second test datasource:
+      type: pg
+      options:
+        host: postgres
+        port: 5432
+        user: postgres
+        dbname: postgres
 
+  queries:
     Check database version:
       namespaced: False
       datasource: Internal Redash PostgreSQL
       description: Query modified in Salt
-      query: | 
+      query: |
         SELECT * FROM data_sources
 
     Unpublished query:
@@ -54,7 +96,7 @@ redash:
       namespaced: True
       datasource: Internal Redash PostgreSQL
       description: Query modified in Salt
-      query: | 
+      query: |
         SELECT * FROM data_sources
 
     Unpublished query namespaced:
