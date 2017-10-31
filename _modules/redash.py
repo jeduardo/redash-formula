@@ -51,7 +51,7 @@ def _get(path, id=None):
             page = page + 1
             result = _raw_get(path, params={'page': page})
         result = results
-    log.debug('Received from wire: %s' % result)
+    log.trace('Received from wire: %s' % result)
     return result
 
 
@@ -73,8 +73,8 @@ def _post(path, params=None, data=None):
 def _delete(path, params=None):
     url = '%s/%s' % (_url(), path)
     res = requests.delete(url, headers=_headers(), params=params)
-    log.debug('DELETE Status code: %s' % res.status_code)
-    log.debug('DELETE Content: %s' % res.content)
+    log.trace('DELETE Status code: %s' % res.status_code)
+    log.trace('DELETE Content: %s' % res.content)
     content = ''
     if res.status_code not in [200, 204]:
         content = res.json()
